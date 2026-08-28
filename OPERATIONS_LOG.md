@@ -46,11 +46,11 @@ trigger.yml 워크플로는 daily 5개 시간대, 8시간마다(reply-check용, 
 
 ### foxbunny-reels-automation (private) - 인스타그램 부계정 @foxbunny_saju2 릴스
 
-다른 대화(세션)에서 주로 관리한다. daily-reel.yml(릴스 생성/발행)이 있고, reply-check.yml(댓글/DM 자동 답글)은 2026-08-18부터 스케줄이 꺼져 있다. Meta Advanced Access 인증 문제로 자동응답이 막혀서 workflow_dispatch만 남겨둔 상태다. dump-top-row.yml은 수동 전용.
+다른 대화(세션)에서 주로 관리한다. daily-reel.yml(릴스 생성/발행)은 네이티브 schedule이 살아있고 매일 도는 게 확인됨(회당 5~10분 소요 — foxbunny-autopost의 어떤 워크플로보다 훨씬 무겁다, 계정 전체 Actions 분량 상당 부분을 이게 차지하는 것으로 추정). reply-check.yml(댓글/DM 자동 답글)은 2026-08-18부터 스케줄이 꺼져 있다(Meta Advanced Access 인증 문제로 workflow_dispatch만 남겨둔 상태). 이 외에 1회성 진단/테스트 워크플로가 다수 있다(dump-top-row.yml 등). 2026-08-28에 "도령/낭자 캐릭터 렌더 검증(DRY_RUN)"이라는 수동 테스트가 회당 6~8분씩 여러 번 실행되는 것도 확인함 — 계정 전체 쿼터가 33분→10분까지 떨어진 시점에 이 레포가 주범이었다. 이 레포 자체를 건드릴지는 사용자가 직접 관리하는 다른 대화 소관이라 이 대화에서는 손대지 않기로 함(2026-08-28 사용자 확인).
 
-### foxbunny-daily-insights (private) - 인스타 부계정/본계정 GA4 인사이트를 시트로
+### foxbunny-daily-insights (private) - 인스타 부계정/본계정 GA4 인사이트를 시트로 — 2026-08-28에 레포 자체가 삭제됨(사용자가 직접 삭제, github.com에서 404 확인)
 
-daily-insights.yml(부계정 @foxbunny_saju2, 원래 매일 08:00 KST)과 daily-insights-main.yml(본계정 @foxbunny_saju, 원래 매일 08:05 KST) 둘 다 2026-08-28에 스케줄을 껐다. 비용 절감 목적, 사용자 요청.
+daily-insights.yml(부계정 @foxbunny_saju2, 원래 매일 08:00 KST)과 daily-insights-main.yml(본계정 @foxbunny_saju, 원래 매일 08:05 KST)을 2026-08-28 오전에 먼저 스케줄만 껐었는데, 같은 날 안에 레포 자체가 삭제됐다(더 이상 존재하지 않음, 아래 내용은 기록용으로만 남겨둠).
 
 backfill-posts.yml, build-kpi-panel.yml, fetch-captions.yml, setup-dropdowns.yml은 전부 수동 실행 전용이라 변동 없음.
 
@@ -96,7 +96,7 @@ daily.yml, reply-check.yml, insights.yml 세 워크플로 모두 그 시점 이�
 
 ### 진행중 — Actions 분량 사실상 바닥 (2026-08-28 오후 확인)
 
-github.com/settings/billing에서 확인한 결과, 계정 전체 Actions 분량이 1,967/2,000분 소진 — 남은 건 33분뿐이었다(리셋까지 4일, 9월 1일경). 게다가 이 계정은 Actions 예산이 $0으로 설정되어 있고 초과 시 사용 중지(Stop usage: Yes)라, 분량을 다 쓰면 과금되는 게 아니라 daily.yml/reply-check.yml/metrics-fetch.yml 전부 그냥 실행이 거부된다. reply-check.yml이 매시간(하루 24회) 도는 게 가장 큰 소모원으로 추정되어(누적 1,502회 실행 기록), 2026-08-28에 foxbunny-cron-trigger의 reply-check 크론을 매시간 → 3시간마다 → 8시간마다(2026-08-28 사용자 요청) 순으로 완화했다. **9월 1일 리셋 후 다시 매시간으로 되돌릴지 검토할 것.** 그래도 분량이 부족해지면 daily.yml(발행)과 metrics-fetch.yml(인사이트 수집)이 reply-check보다 우선순위가 높다 — 답글 자동화가 먼저 죽는 게 낫다.
+github.com/settings/billing에서 확인한 결과, 계정 전체 Actions 분량이 1,967/2,000분 소진 — 남은 건 33분뿐이었다(리셋까지 4일, 9월 1일경). 게다가 이 계정은 Actions 예산이 $0으로 설정되어 있고 초과 시 사용 중지(Stop usage: Yes)라, 분량을 다 쓰면 과금되는 게 아니라 daily.yml/reply-check.yml/metrics-fetch.yml 전부 그냥 실행이 거부된다. reply-check.yml이 매시간(하루 24회) 도는 게 가장 큰 소모원으로 추정되어(누적 1,502회 실행 기록), 2026-08-28에 foxbunny-cron-trigger의 reply-check 크론을 매시간 → 3시간마다 → 8시간마다(2026-08-28 사용자 요청) 순으로 완화했다. **9월 1일 리셋 후 다시 매시간으로 되돌릴지 검토할 것. 2026-08-28 오후에 전체 레포를 훑어본 결과, foxbunny-legal은 public+무스케줄이라 무관하고 foxbunny-daily-insights는 그날 레포 자체가 삭제돼서 더 이상 소모원이 아니다. 실질적으로 foxbunny-autopost 외에 남은 가장 큰 소모원은 foxbunny-reels-automation이다 — daily-reel.yml이 매일 스케줄로 돌고 회당 5~10분이 걸리며, 그날 오후엔 캐릭터 렌더 검증용 수동 DRY_RUN 테스트도 회당 6~8분씩 여러 번 돌아서 남은 쿼터(33분→10분)를 거의 다 소모했다. 이 레포는 사용자가 다른 대화에서 직접 관리하는 영역이라 손대지 않기로 확인함(2026-08-28).** 그래도 분량이 부족해지면 daily.yml(발행)과 metrics-fetch.yml(인사이트 수집)이 reply-check보다 우선순위가 높다 — 답글 자동화가 먼저 죽는 게 낫다.
 
 ### 미해결: 자동 생성된 이슈의 시각 정보가 실제 기록과 안 맞음
 
