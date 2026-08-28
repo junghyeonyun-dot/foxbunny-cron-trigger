@@ -26,7 +26,7 @@ daily.yml은 원래 주 14회(평일 07:00/21:00 KST, 금 07:00, 토 00:00/10:00
 
 reply-check.yml은 원래 30분마다 실행되도록 설정되어 있었는데, 지금은 schedule 블록을 주석 처리하고 foxbunny-cron-trigger가 매시 정각에 대신 호출한다.
 
-insights.yml(insights-sync)은 원래 매일 08:00 KST에 실행되도록 설정되어 있었는데, 지금은 schedule 블록을 주석 처리하고 foxbunny-cron-trigger가 매일 08:00 KST에 대신 호출한다. workflow_dispatch로 수동 실행할 때 date 입력값을 주면 특정 날짜를 백필할 수 있다.
+insights.yml(insights-sync)과 그 스크립트 insights_sync.py는 2026-08-28에 foxbunny-autopost에서 완전히 삭제했다. 같은 역할(게시물 인사이트+스타일/훅/CTA 등 수동 필드 채우기)은 이제 Cowork 예약 작업 "폭스바니 쓰레드 시트 채우기"가 대신한다 — 아래 Cowork 예약 작업 항목 참고.
 
 dump-account-formulas.yml, dump-permalinks.yml, fix-account-sheet.yml, fix-sheet-text.yml, setup-kpi-panel.yml은 스케줄 없이 수동 전용이며 전부 1회성/진단용 워크플로다.
 
@@ -34,7 +34,7 @@ dump-account-formulas.yml, dump-permalinks.yml, fix-account-sheet.yml, fix-sheet
 
 ### foxbunny-cron-trigger (public, 이 레포) - 2026-08-28 신설
 
-trigger.yml 워크플로는 daily 5개 시간대, 매시 정각, 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, insights.yml 중 맞는 파일을 실행시킨다.
+trigger.yml 워크플로는 daily 5개 시간대와 매시 정각 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml 또는 reply-check.yml을 실행시킨다. 매일 08:00 KST(insights.yml용) 항목은 2026-08-28에 제거했다 — insights.yml 자체가 삭제됐기 때문.
 
 인증 정보는 FOXBUNNY_AUTOPOST_PAT라는 이름으로 저장소 설정에 등록되어 있고, foxbunny-autopost 레포 하나에만 권한 범위가 한정되어 있다.
 
@@ -59,6 +59,12 @@ backfill-posts.yml, build-kpi-panel.yml, fetch-captions.yml, setup-dropdowns.yml
 Cowork 예약 작업(foxbunny-daily-insight)이 매일 마케팅 인사이트 리포트를 저장하는 대상 저장소.
 
 foxbunny-legal 저장소는 public이며 이 문서에서는 다루지 않았다.
+
+---
+
+### Cowork 예약 작업 (GitHub Actions 아님)
+
+foxbunny-threads-sheet-fill: 매일 아침 실행되며, 위 foxbunny-autopost의 insights.yml/insights_sync.py를 대체한다. 어제 올라간 쓰레드 게시물의 인사이트(조회수/좋아요/댓글 등)를 Threads Graph API로 가져오고, 예전엔 사람이 직접 채우던 스타일/훅/CTA 필드는 게시물 원문을 직접 읽어서 분류한 뒤 시트에 채운다. GitHub Actions 대신 Cowork 브라우저 조작(Chrome)으로 시트에 직접 입력하는 방식이라 서비스 계정 키가 필요 없다. 매주 월요일에는 추가로 지난주 KPI 달성 여부를 기록하고 다음 주 목표를 설정한다.
 
 ---
 
@@ -111,6 +117,8 @@ foxbunny-autopost 레포에 자동으로 만들어진 이슈 하나에 마지막
 - **저장소 영구 삭제는 직접 하지 않는다**: 비용 절감이 필요하면 워크플로를 끄는 선까지만 하고, 저장소 자체 삭제는 항상 사용자에게 안내만 하고 직접 수행을 요청한다.
 
 - **계정 보안 설정 화면은 직접 조작하지 않는다**: 새 인증정보 발급이나 삭제가 필요하면 항상 사용자가 직접 하고, 발급된 값을 받아서 후속 등록 작업만 처리한다.
+
+- **시트 채우기는 GitHub Actions 대신 Cowork 예약 작업으로 운영한다**: 2026-08-28에 insights.yml/insights_sync.py(GitHub Actions)를 완전히 삭제하고, 같은 역할을 Cowork 예약 작업 "폭스바니 쓰레드 시트 채우기"로 옮겼다. 이유는 (1) 서비스 계정 키 없이 브라우저로 직접 시트를 채울 수 있고, (2) 스타일/훅/CTA 같은 필드를 사람이 하던 것처럼 게시물 원문을 읽고 판단해서 채울 수 있어서다 — 이는 과거 로그 기반 자동 분류보다 정확도가 높을 것으로 기대되며, 알려진 이슈였던 과거 게시물 스타일 오분류 문제의 재발 방지에도 도움이 될 것으로 본다.
 
 ---
 
