@@ -36,7 +36,7 @@ dump-account-formulas.yml, dump-permalinks.yml, fix-account-sheet.yml, fix-sheet
 
 ### foxbunny-cron-trigger (public, 이 레포) - 2026-08-28 신설
 
-trigger.yml 워크플로는 daily 5개 시간대, 3시간마다(reply-check용, 2026-08-28 오후에 매시 정각에서 완화), 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, metrics-fetch.yml 중 맞는 걸 실행시킨다. 원래 있던 08:00 KST(insights.yml용) 항목은 2026-08-28에 한 번 제거했다가, 같은 날 안에 metrics-fetch.yml용으로 다시 추가했다 — insights.yml은 삭제됐지만 그 자리를 대신할 숫자 지표 수집용 metrics-fetch.yml이 새로 생겼기 때문(하이브리드 구조, 위 Cowork 예약 작업 항목 참고).
+trigger.yml 워크플로는 daily 5개 시간대, 8시간마다(reply-check용, 2026-08-28 매시 정각→3시간마다→8시간마다 순으로 완화), 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, metrics-fetch.yml 중 맞는 걸 실행시킨다. 원래 있던 08:00 KST(insights.yml용) 항목은 2026-08-28에 한 번 제거했다가, 같은 날 안에 metrics-fetch.yml용으로 다시 추가했다 — insights.yml은 삭제됐지만 그 자리를 대신할 숫자 지표 수집용 metrics-fetch.yml이 새로 생겼기 때문(하이브리드 구조, 위 Cowork 예약 작업 항목 참고).
 
 인증 정보는 FOXBUNNY_AUTOPOST_PAT라는 이름으로 저장소 설정에 등록되어 있고, foxbunny-autopost 레포 하나에만 권한 범위가 한정되어 있다.
 
@@ -96,7 +96,7 @@ daily.yml, reply-check.yml, insights.yml 세 워크플로 모두 그 시점 이�
 
 ### 진행중 — Actions 분량 사실상 바닥 (2026-08-28 오후 확인)
 
-github.com/settings/billing에서 확인한 결과, 계정 전체 Actions 분량이 1,967/2,000분 소진 — 남은 건 33분뿐이었다(리셋까지 4일, 9월 1일경). 게다가 이 계정은 Actions 예산이 $0으로 설정되어 있고 초과 시 사용 중지(Stop usage: Yes)라, 분량을 다 쓰면 과금되는 게 아니라 daily.yml/reply-check.yml/metrics-fetch.yml 전부 그냥 실행이 거부된다. reply-check.yml이 매시간(하루 24회) 도는 게 가장 큰 소모원으로 추정되어(누적 1,502회 실행 기록), 2026-08-28에 foxbunny-cron-trigger의 reply-check 크론을 매시간에서 3시간마다로 완화했다. **9월 1일 리셋 후 다시 매시간으로 되돌릴지 검토할 것.** 그래도 분량이 부족해지면 daily.yml(발행)과 metrics-fetch.yml(인사이트 수집)이 reply-check보다 우선순위가 높다 — 답글 자동화가 먼저 죽는 게 낫다.
+github.com/settings/billing에서 확인한 결과, 계정 전체 Actions 분량이 1,967/2,000분 소진 — 남은 건 33분뿐이었다(리셋까지 4일, 9월 1일경). 게다가 이 계정은 Actions 예산이 $0으로 설정되어 있고 초과 시 사용 중지(Stop usage: Yes)라, 분량을 다 쓰면 과금되는 게 아니라 daily.yml/reply-check.yml/metrics-fetch.yml 전부 그냥 실행이 거부된다. reply-check.yml이 매시간(하루 24회) 도는 게 가장 큰 소모원으로 추정되어(누적 1,502회 실행 기록), 2026-08-28에 foxbunny-cron-trigger의 reply-check 크론을 매시간 → 3시간마다 → 8시간마다(2026-08-28 사용자 요청) 순으로 완화했다. **9월 1일 리셋 후 다시 매시간으로 되돌릴지 검토할 것.** 그래도 분량이 부족해지면 daily.yml(발행)과 metrics-fetch.yml(인사이트 수집)이 reply-check보다 우선순위가 높다 — 답글 자동화가 먼저 죽는 게 낫다.
 
 ### 미해결: 자동 생성된 이슈의 시각 정보가 실제 기록과 안 맞음
 
