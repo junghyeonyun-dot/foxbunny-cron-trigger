@@ -28,13 +28,15 @@ reply-check.yml은 원래 30분마다 실행되도록 설정되어 있었는데,
 
 insights.yml(insights-sync)과 그 스크립트 insights_sync.py는 2026-08-28에 foxbunny-autopost에서 완전히 삭제했다. 같은 역할(게시물 인사이트+스타일/훅/CTA 등 수동 필드 채우기)은 이제 Cowork 예약 작업 "폭스바니 쓰레드 시트 채우기"가 대신한다 — 아래 Cowork 예약 작업 항목 참고.
 
+metrics-fetch.yml(scripts/fetch_metrics.py)은 2026-08-28에 새로 추가한 워크플로다. graph.threads.net을 Cowork의 Chrome 확장이 host permission 문제로 직접 호출하지 못한다는 게 확인돼서, 숫자 지표(조회수/좋아요/댓글 등)와 게시물 원문만 이 워크플로가 Threads Graph API로 가져와 state/metrics_daily.json에 저장해두는 역할을 한다. 시트에 쓰는 건 하지 않는다 — 그건 Cowork 예약 작업(아래 참고) 몫이다. foxbunny-cron-trigger가 매일 08:00 KST에 대신 호출한다.
+
 dump-account-formulas.yml, dump-permalinks.yml, fix-account-sheet.yml, fix-sheet-text.yml, setup-kpi-panel.yml은 스케줄 없이 수동 전용이며 전부 1회성/진단용 워크플로다.
 
 대상 시트는 폭스바니 데일리 인사이트(spreadsheetId 1yKkG59UjEUotyYDkPgwTPguWVyWGz2v3JD-i7A1PD60) 중 쓰레드 게시물, 쓰레드 계정 전체 탭이다.
 
 ### foxbunny-cron-trigger (public, 이 레포) - 2026-08-28 신설
 
-trigger.yml 워크플로는 daily 5개 시간대와 매시 정각 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml 또는 reply-check.yml을 실행시킨다. 매일 08:00 KST(insights.yml용) 항목은 2026-08-28에 제거했다 — insights.yml 자체가 삭제됐기 때문.
+trigger.yml 워크플로는 daily 5개 시간대, 매시 정각, 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, metrics-fetch.yml 중 맞는 걸 실행시킨다. 원래 있던 08:00 KST(insights.yml용) 항목은 2026-08-28에 한 번 제거했다가, 같은 날 안에 metrics-fetch.yml용으로 다시 추가했다 — insights.yml은 삭제됐지만 그 자리를 대신할 숫자 지표 수집용 metrics-fetch.yml이 새로 생겼기 때문(하이브리드 구조, 위 Cowork 예약 작업 항목 참고).
 
 인증 정보는 FOXBUNNY_AUTOPOST_PAT라는 이름으로 저장소 설정에 등록되어 있고, foxbunny-autopost 레포 하나에만 권한 범위가 한정되어 있다.
 
@@ -64,7 +66,9 @@ foxbunny-legal 저장소는 public이며 이 문서에서는 다루지 않았다
 
 ### Cowork 예약 작업 (GitHub Actions 아님)
 
-foxbunny-threads-sheet-fill: 매일 아침 실행되며, 위 foxbunny-autopost의 insights.yml/insights_sync.py를 대체한다. 어제 올라간 쓰레드 게시물의 인사이트(조회수/좋아요/댓글 등)를 Threads Graph API로 가져오고, 예전엔 사람이 직접 채우던 스타일/훅/CTA 필드는 게시물 원문을 직접 읽어서 분류한 뒤 시트에 채운다. GitHub Actions 대신 Cowork 브라우저 조작(Chrome)으로 시트에 직접 입력하는 방식이라 서비스 계정 키가 필요 없다. 매주 월요일에는 추가로 지난주 KPI 달성 여부를 기록하고 다음 주 목표를 설정한다.
+foxbunny-threads-sheet-fill: 매일 아침(09:00 KST) 실행되며, 위 foxbunny-autopost의 insights.yml/insights_sync.py를 대체한다. **하이브리드 구조다** — 처음엔 Threads Graph API를 브라우저로 직접 호출하도록 설계했는데, 2026-08-28에 실제로 돌려보니 Cowork의 Chrome 확장이 graph.threads.net에 대한 host permission이 없어서 접근 자체가 막힌다는 걸 확인했다(graph.instagram.com은 되는데 graph.threads.net은 안 됨 — 확장 매니페스트에 고정된 제약이라 우회 불가). 그래서 숫자 지표와 게시물 원문은 위 metrics-fetch.yml이 GitHub Actions 쪽에서 미리 가져와 state/metrics_daily.json에 저장해두고, 이 Cowork 작업은 그 JSON을 GitHub에서 읽기만 한다. 예전엔 사람이 직접 채우던 스타일/훅/CTA 필드는 JSON에 포함된 게시물 원문을 직접 읽어서 분류한 뒤, Google Sheets는 브라우저로 직접 입력한다(서비스 계정 키 불필요). 매주 월요일에는 추가로 지난주 KPI 달성 여부를 기록하고 다음 주 목표를 설정한다.
+
+2026-08-28 첫 테스트 실행 결과: metrics-fetch.yml은 정상 동작 확인(2026-08-27자 JSON 생성 성공). 다만 그날 아침 구식 insights_sync.py의 마지막 실행분이 이미 시트에 8/27 데이터를 채워놓은 상태라 중복 삽입은 하지 않았다 — 이 하이브리드 파이프라인이 시트에 실제로 처음 쓰는 건 2026-08-29 아침이 될 예정이다.
 
 ---
 
@@ -154,3 +158,5 @@ foxbunny-autopost 레포에 자동으로 만들어진 이슈 하나에 마지막
 - 로컬 컴퓨터의 예약 작업으로 옮겨간 자동화를 클라우드로 다시 옮긴 뒤에는, 로컬 예약 작업을 반드시 꺼야 한다. 안 그러면 예전 로컬 스크립트가 몇 주씩 조용히 계속 돌 수 있다(실제 사례 있었음, 8월 19일 발견).
 
 - 이름에 용도가 명시되어 있는데 방치된 인증정보는 의심할 것. 그 자체가 살아있는 자동화일 가능성이 높다(위 15분 미스터리 사례 참고).
+
+- Cowork의 Chrome 확장은 아무 도메인이나 접근할 수 있는 게 아니라, 확장 매니페스트에 미리 등록된 host permission 목록 안에서만 동작한다. graph.instagram.com은 되는데 graph.threads.net은 안 되는 식으로 도메인마다 다르다 — 이건 대화 중에 추가/변경 요청해도 바꿀 수 없는 구조적 제약이니, 새로운 외부 API를 브라우저로 직접 호출하는 설계를 하기 전에 먼저 그 도메인이 실제로 열리는지 빠르게 테스트해볼 것(2026-08-28 사례: 쓰레드 시트 채우기를 순수 브라우저 방식으로 설계했다가 이 제약 때문에 GitHub Actions와 역할을 나누는 하이브리드 구조로 다시 설계함).
