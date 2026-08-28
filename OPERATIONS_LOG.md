@@ -4,6 +4,8 @@
 
 마지막 갱신: 2026-08-28
 
+> **⏸ 현재 자동화 전체 일시정지 중 (2026-08-28 사용자 요청)**: Actions 쿼터가 사실상 바닥나서, foxbunny-cron-trigger의 schedule을 통째로 주석 처리했다. daily.yml(발행)/reply-check.yml(답글)/metrics-fetch.yml(인사이트 수집) 전부 자동으로는 안 돈다. 대신: (1) 8/28 저녁~8/31 게시물은 미리 초안을 써서 사용자가 Threads 앱으로 직접 수동 업로드, (2) 댓글 답글은 사용자가 댓글을 캡쳐해서 보여주면 그때그때 초안을 써주고 사용자가 직접 게시, (3) Cowork 예약 작업 "폭스바니 쓰레드 시트 채우기"도 같이 비활성화(enabled:false)해둠 — 이 기간엔 자동 발행이 없어서 채울 데이터도 없기 때문. **9월 초 쿼터 리셋 후 할 일**: foxbunny-cron-trigger의 trigger.yml에서 schedule 블록 주석 해제, Cowork 예약 작업 다시 활성화.
+
 ---
 
 ## 1. 프로젝트 개요
