@@ -24,7 +24,7 @@ daily.yml은 원래 주 14회(평일 07:00/21:00 KST, 금 07:00, 토 00:00/10:00
 
 2026-08-28 현재는 이 스케줄이 GitHub에서 실행되지 않고 있어서(3번 항목 참고), daily.yml 파일 안의 schedule 블록은 주석 처리해두었고, 같은 시각에 foxbunny-cron-trigger 레포에서 대신 호출하는 방식으로 운영 중이다.
 
-reply-check.yml은 원래 30분마다 실행되도록 설정되어 있었는데, 지금은 schedule 블록을 주석 처리하고 foxbunny-cron-trigger가 매시 정각에 대신 호출한다.
+reply-check.yml은 원래 30분마다 실행되도록 설정되어 있었는데, 지금은 schedule 블록을 주석 처리하고 foxbunny-cron-trigger가 대신 호출한다. 처음엔 매시 정각(1시간마다)이었는데, 2026-08-28 오후에 계정 전체 Actions 분량이 33분(2,000분 중 1,967분 소진, 예산 $0+초과시 사용중지 설정)까지 떨어진 걸 확인하고 3시간마다로 완화했다 — 안 그러면 리셋일(9월 1일경) 전에 분량이 바닥나서 daily.yml/reply-check.yml/metrics-fetch.yml 전부 강제로 멈출 위험이 있었음.
 
 insights.yml(insights-sync)과 그 스크립트 insights_sync.py는 2026-08-28에 foxbunny-autopost에서 완전히 삭제했다. 같은 역할(게시물 인사이트+스타일/훅/CTA 등 수동 필드 채우기)은 이제 Cowork 예약 작업 "폭스바니 쓰레드 시트 채우기"가 대신한다 — 아래 Cowork 예약 작업 항목 참고.
 
@@ -36,7 +36,7 @@ dump-account-formulas.yml, dump-permalinks.yml, fix-account-sheet.yml, fix-sheet
 
 ### foxbunny-cron-trigger (public, 이 레포) - 2026-08-28 신설
 
-trigger.yml 워크플로는 daily 5개 시간대, 매시 정각, 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, metrics-fetch.yml 중 맞는 걸 실행시킨다. 원래 있던 08:00 KST(insights.yml용) 항목은 2026-08-28에 한 번 제거했다가, 같은 날 안에 metrics-fetch.yml용으로 다시 추가했다 — insights.yml은 삭제됐지만 그 자리를 대신할 숫자 지표 수집용 metrics-fetch.yml이 새로 생겼기 때문(하이브리드 구조, 위 Cowork 예약 작업 항목 참고).
+trigger.yml 워크플로는 daily 5개 시간대, 3시간마다(reply-check용, 2026-08-28 오후에 매시 정각에서 완화), 매일 08:00 KST 스케줄을 가지고 있다. 어느 시각인지 판별해서 foxbunny-autopost의 daily.yml, reply-check.yml, metrics-fetch.yml 중 맞는 걸 실행시킨다. 원래 있던 08:00 KST(insights.yml용) 항목은 2026-08-28에 한 번 제거했다가, 같은 날 안에 metrics-fetch.yml용으로 다시 추가했다 — insights.yml은 삭제됐지만 그 자리를 대신할 숫자 지표 수집용 metrics-fetch.yml이 새로 생겼기 때문(하이브리드 구조, 위 Cowork 예약 작업 항목 참고).
 
 인증 정보는 FOXBUNNY_AUTOPOST_PAT라는 이름으로 저장소 설정에 등록되어 있고, foxbunny-autopost 레포 하나에만 권한 범위가 한정되어 있다.
 
@@ -93,6 +93,10 @@ daily.yml, reply-check.yml, insights.yml 세 워크플로 모두 그 시점 이�
 이 시점에 실행 시간 사용량이 계속 올라가고 있었다는 정황은 있지만, 사용량이 임계치에 가까우면 예약 실행만 조용히 빠지고 수동 실행은 처리된다는 것은 확인되지 않은 추정일 뿐이다. 위에서 설명한 15분 간격 실행이 사용량의 상당 부분을 차지했을 가능성이 있어서, 그게 원인이었을 수도 있고 별개 문제일 수도 있다.
 
 **대응**: 원인을 확실히 찾지 못한 채로, foxbunny-cron-trigger를 통한 외부 호출 방식으로 임시 대응 중이다. 9월 초 사용량이 초기화된 뒤 원래 예약 실행 방식을 복원했을 때 다시 안 도는지 반드시 재확인해야 한다. 복원 후에도 안 돌면 사용량 때문이라는 추정은 틀린 것이고 다른 원인을 찾아야 한다.
+
+### 진행중 — Actions 분량 사실상 바닥 (2026-08-28 오후 확인)
+
+github.com/settings/billing에서 확인한 결과, 계정 전체 Actions 분량이 1,967/2,000분 소진 — 남은 건 33분뿐이었다(리셋까지 4일, 9월 1일경). 게다가 이 계정은 Actions 예산이 $0으로 설정되어 있고 초과 시 사용 중지(Stop usage: Yes)라, 분량을 다 쓰면 과금되는 게 아니라 daily.yml/reply-check.yml/metrics-fetch.yml 전부 그냥 실행이 거부된다. reply-check.yml이 매시간(하루 24회) 도는 게 가장 큰 소모원으로 추정되어(누적 1,502회 실행 기록), 2026-08-28에 foxbunny-cron-trigger의 reply-check 크론을 매시간에서 3시간마다로 완화했다. **9월 1일 리셋 후 다시 매시간으로 되돌릴지 검토할 것.** 그래도 분량이 부족해지면 daily.yml(발행)과 metrics-fetch.yml(인사이트 수집)이 reply-check보다 우선순위가 높다 — 답글 자동화가 먼저 죽는 게 낫다.
 
 ### 미해결: 자동 생성된 이슈의 시각 정보가 실제 기록과 안 맞음
 
