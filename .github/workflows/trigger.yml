@@ -11,15 +11,11 @@ on:
   # 2026-10-15: 예약 호출이 3~6시간씩 밀려 저녁 회차가 7일 중 6번 빠짐 → 회차마다 미리 여러 번 호출해서 늦게 와도 창 안에 하나는 걸리게.
   #   아침 창(08:17~11:47)용: 04:47 / 06:17 / 07:47 / 08:17,  저녁 창(20:17~23:57)용: 15:47 / 17:17 / 18:47 / 20:17 (KST)
   #   창 밖이거나 이미 올라갔으면 slot_due.py가 바로 건너뛴다(중복 발행 없음).
+  # 2026-11-26: 예약 호출이 8~10시간씩 밀려 저녁 회차가 다시 자주 빠짐 → 30분마다 호출하고, 들어온 시각이
+  #   KST 아침 창(08:17~11:47)·저녁 창(20:17~23:57)일 때만 daily를 부른다. 공개 저장소라 이 호출 자체는 무료,
+  #   비공개 저장소는 창 안에서만 실행돼 실행 시간 증가는 하루 최대 14회 정도. 이미 올라갔으면 slot_due.py가 건너뜀.
   schedule:
-    - cron: '47 19 * * *'           # 04:47
-    - cron: '17 21 * * *'           # 06:17
-    - cron: '47 22 * * *'           # 07:47
-    - cron: '17 23 * * *'           # 08:17
-    - cron: '47 6 * * *'            # 15:47
-    - cron: '17 8 * * *'            # 17:17
-    - cron: '47 9 * * *'            # 18:47
-    - cron: '17 11 * * *'           # 20:17
+    - cron: '7,37 * * * *'
     - cron: '7 */8 * * *'
   workflow_dispatch:
     inputs:
@@ -45,8 +41,13 @@ jobs:
             echo "workflow=${{ inputs.target_workflow }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.event.schedule }}" in
-              "47 19 * * *"|"17 21 * * *"|"47 22 * * *"|"17 23 * * *"|"47 6 * * *"|"17 8 * * *"|"47 9 * * *"|"17 11 * * *")
-                echo "workflow=daily.yml" >> "$GITHUB_OUTPUT" ;;
+              "7,37 * * * *")
+                T=$((10#$(TZ=Asia/Seoul date +%H%M)))
+                if { [ $T -ge 817 ] && [ $T -le 1147 ]; } || { [ $T -ge 2017 ] && [ $T -le 2357 ]; }; then
+                  echo "workflow=daily.yml" >> "$GITHUB_OUTPUT"
+                else
+                  echo "workflow=none" >> "$GITHUB_OUTPUT"
+                fi ;;
               "7 */8 * * *")
                 echo "workflow=reply-check.yml" >> "$GITHUB_OUTPUT" ;;
               "0 23 * * *")
@@ -58,6 +59,7 @@ jobs:
             esac
           fi
       - name: Trigger target workflow via API
+        if: steps.target.outputs.workflow != 'none'
         run: |
           curl -sf -X POST \
             -H "Authorization: Bearer ${{ secrets.FOXBUNNY_AUTOPOST_PAT }}" \
